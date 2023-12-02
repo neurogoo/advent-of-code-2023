@@ -36,4 +36,34 @@
                                    (re-pattern (apply str (reverse pattern)))
                                    (into {} (map (fn [[key val]] [(str/reverse key) val]) name-to-number)))
                                   ((fn [s] (re-find #"[1-9]" s)))))))))
+       (apply +))
+
+  ;;Day 2 part 1
+  (let [limit {"red" 12 "green" 13 "blue" 14}]
+    (->> (slurp "src/advent_of_code_2023/day2.txt")
+         (str/split-lines)
+         (filter #(->> %
+                       (re-seq #"\d+ (?:red|green|blue)")
+                       (map (fn [s] (str/split s #" ")))
+                       (every? (fn [[number color]] (<= (bigint number) (get limit color))))))
+         (map (fn [s] (->> s
+                           (take-while #(not= % \:))
+                           (apply str)
+                           (re-seq #"\d+")
+                           first
+                           bigint)))
+         (apply +)))
+
+  ;;Day 2 part 2
+  (->> (slurp "src/advent_of_code_2023/day2.txt")
+       (str/split-lines)
+       (map #(->> %
+                  (re-seq #"\d+ (?:red|green|blue)")
+                  (map (fn [s] (str/split s #" ")))
+                  (reduce (fn [result [number color]] (update result color (fn [cur-min]
+                                                                             (if (> (bigint number) cur-min)
+                                                                               (bigint number)
+                                                                               cur-min)))) {"blue" 0 "green" 0 "red" 0})
+                  vals
+                  (apply *)))
        (apply +)))
