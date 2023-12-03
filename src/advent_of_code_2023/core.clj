@@ -66,4 +66,79 @@
                                                                                cur-min)))) {"blue" 0 "green" 0 "red" 0})
                   vals
                   (apply *)))
-       (apply +)))
+       (apply +))
+
+  ;;Day 3 part 1
+  (let [input (->> (slurp "src/advent_of_code_2023/day3.txt")
+                   (str/split-lines))
+        hotzones (->> (for [i (range 0 (count input))
+                            j (range 0 (count (first input)))
+                            :when (re-find #"[^0-9\.]" (str (get-in input [i j])))]
+                        (for [x (range -1 2)
+                              y (range -1 2)
+                              :let [new-i (+ i y)
+                                    new-j (+ j x)]
+                              :when (and (>= new-i 0) (<= new-i (count input))
+                                         (>= new-j 0) (<= new-j (count (first input)))
+                                         (not= [y x] [new-i new-j])
+                                         (re-find #"[0-9]" (str (get-in input [new-i new-j]))))]
+                          [new-i new-j]))
+                      (apply concat)
+                      (into #{}))]
+    (->> (for [i (range 0 (count (first input)))]
+           (->> (get input i)
+                (map-indexed
+                 (fn [idx c]
+                   (when (re-find #"[0-9]" (str c))
+                     [[i idx] c])))
+                (partition-by nil?)
+                (filter (partial every? identity))
+                (map (fn [numvec]
+                       (->> numvec
+                            (reduce (fn [[indices numbers] [index number]]
+                                      [(conj indices index) (conj numbers number)]) [[] []])
+                            ((fn [[indices numbers]] [indices (bigint (apply str numbers))])))))))
+         (apply concat)
+         (filter (fn [[indices _]] (some hotzones indices)))
+         (map second)
+         (apply +)))
+
+  ;;Day 3 part 2
+  (let [input (->> (slurp "src/advent_of_code_2023/day3.txt")
+                   (str/split-lines))
+        hotzones (->> (for [i (range 0 (count input))
+                            j (range 0 (count (first input)))
+                            :when (re-find #"[\*]" (str (get-in input [i j])))]
+                        (for [x (range -1 2)
+                              y (range -1 2)
+                              :let [new-i (+ i y)
+                                    new-j (+ j x)]
+                              :when (and (>= new-i 0) (<= new-i (count input))
+                                         (>= new-j 0) (<= new-j (count (first input)))
+                                         (not= [y x] [new-i new-j])
+                                         (re-find #"[0-9]" (str (get-in input [new-i new-j]))))]
+                          [new-i new-j]))
+                      (remove empty?)
+                      (map set))
+        numbers (->> (for [i (range 0 (count (first input)))]
+                       (->> (get input i)
+                            (map-indexed
+                             (fn [idx c]
+                               (when (re-find #"[0-9]" (str c))
+                                 [[i idx] c])))
+                            (partition-by nil?)
+                            (filter (partial every? identity))
+                            (map (fn [numvec]
+                                   (->> numvec
+                                        (reduce (fn [[indices numbers] [index number]]
+                                                  [(conj indices index) (conj numbers number)]) [[] []])
+                                        ((fn [[indices numbers]] [indices (bigint (apply str numbers))])))))))
+                     (apply concat))]
+    (->> (for [gear hotzones]
+           (filter (fn [[zones _]]
+                     (some gear zones)) numbers))
+         (filter #(= 2 (count %)))
+         (map #(->> %
+                    (map second)
+                    (apply *)))
+         (apply +))))
